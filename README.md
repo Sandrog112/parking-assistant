@@ -49,6 +49,7 @@ The system consists of 3 main components orchestrated via LangGraph:
 ## Prerequisites
 
 - Python 3.11+
+- [uv](https://docs.astral.sh/uv/)
 - Docker and Docker Compose
 - OpenAI API key
 
@@ -59,9 +60,7 @@ The system consists of 3 main components orchestrated via LangGraph:
 ```bash
 git clone https://github.com/Sandrog112/parking-assistant.git
 cd parking-assistant
-python -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
+uv sync
 ```
 
 ### 2. Configure environment
@@ -80,13 +79,13 @@ docker-compose up -d
 ### 4. Ingest knowledge base
 
 ```bash
-python -m parking_assistant.rag.knowledge
+uv run python -m parking_assistant.rag.knowledge
 ```
 
 ### 5. Start MCP server
 
 ```bash
-uvicorn parking_assistant.mcp.server:app --host 0.0.0.0 --port 8000
+uv run uvicorn parking_assistant.mcp.server:app --host 0.0.0.0 --port 8000
 ```
 
 ## Usage
@@ -165,7 +164,7 @@ curl -X POST http://localhost:8000/reservations/{id}/approve \
 ## Testing
 
 ```bash
-pytest tests/ -v
+uv run pytest tests/ -v
 ```
 
 Tests cover:
