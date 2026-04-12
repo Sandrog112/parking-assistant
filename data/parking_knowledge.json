@@ -1,0 +1,50 @@
+[
+  {
+    "title": "Parking Rates",
+    "content": "Hourly rate: $3 per hour. Daily maximum: $25. Weekly pass: $100. Monthly pass: $150. EV charging spots have an additional $1 per hour surcharge."
+  },
+  {
+    "title": "Hours of Operation",
+    "content": "The parking garage is open 24 hours a day, 7 days a week. Staffed hours are Monday through Friday from 7:00 AM to 10:00 PM, and Saturday through Sunday from 8:00 AM to 8:00 PM."
+  },
+  {
+    "title": "Location",
+    "content": "The parking garage is located at 123 Main Street, Downtown. It is accessible from both Main Street and Oak Avenue entrances. GPS coordinates: 41.8781, -87.6298."
+  },
+  {
+    "title": "Capacity",
+    "content": "Total capacity is 500 spots across 5 levels. Level 1: 80 spots (including 10 handicap). Level 2: 100 spots. Level 3: 120 spots. Level 4: 120 spots. Level 5: 80 spots (including 20 EV charging spots)."
+  },
+  {
+    "title": "Reservation Policy",
+    "content": "Reservations can be made up to 7 days in advance. Minimum reservation duration is 1 hour. Maximum reservation duration is 24 hours. All reservations require administrator approval before confirmation."
+  },
+  {
+    "title": "Cancellation Policy",
+    "content": "Free cancellation up to 2 hours before the reservation start time. Late cancellations incur a $5 fee. No-shows are charged the full reservation amount."
+  },
+  {
+    "title": "Payment Methods",
+    "content": "Accepted payment methods: Visa, MasterCard, American Express, Apple Pay, Google Pay, and cash at staffed kiosks. Prepayment is required for all reservations."
+  },
+  {
+    "title": "EV Charging",
+    "content": "20 EV charging spots are available on Level 5. Chargers support Level 2 (7.2 kW) and DC Fast Charging (50 kW). Charging is billed at $0.30 per kWh in addition to parking fees."
+  },
+  {
+    "title": "Handicap Parking",
+    "content": "10 handicap-accessible spots are available on Level 1 near the elevator. A valid handicap placard or license plate is required. These spots cannot be reserved and are available on a first-come, first-served basis."
+  },
+  {
+    "title": "Rules and Regulations",
+    "content": "Speed limit inside the garage is 5 mph. No overnight parking without a reservation. Vehicles must not exceed 6.5 feet in height. Motorcycles have dedicated spots near the entrance on Level 1. No commercial vehicles over 20 feet in length."
+  },
+  {
+    "title": "Security",
+    "content": "The garage is monitored by 24/7 CCTV surveillance. Emergency call boxes are located on every level. Security personnel patrol during staffed hours. Report any issues to the management office on Level 1."
+  },
+  {
+    "title": "Contact Information",
+    "content": "Phone: (555) 123-4567. Email: parking@yahoo.com. Website: parkingassistant.com. Management office is located on Level 1 near the main entrance."
+  }
+]
