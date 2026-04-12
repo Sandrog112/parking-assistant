@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "parking-assistant"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "langchain>=0.3",
+    "langchain-openai>=0.3",
+    "langchain-weaviate>=0.0.3",
+    "langgraph>=0.3",
+    "weaviate-client>=4.9",
+    "fastapi>=0.115",
+    "uvicorn>=0.34",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.7",
+    "httpx>=0.28",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+]
+
+[project.scripts]
+parking-mcp = "parking_assistant.mcp.server:main"
+parking-ingest = "parking_assistant.rag.knowledge:ingest"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/parking_assistant"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
