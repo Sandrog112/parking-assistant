@@ -9,7 +9,3 @@ output "instance_id" {
 output "mcp_url" {
   value = "http://${aws_instance.parking.public_ip}:8000"
 }
-
-output "weaviate_url" {
-  value = "http://${aws_instance.parking.public_ip}:8080"
-}

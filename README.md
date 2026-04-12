@@ -23,7 +23,7 @@ The system consists of 3 main components orchestrated via LangGraph:
                     |                           |
            +--------v--------+        +--------v-----------+
            | RAG Chatbot     |        | Create Reservation |
-           | (Weaviate +LLM) |        +--------+-----------+
+           | (FAISS + LLM)   |        +--------+-----------+
            +--------+--------+                 |
                     |                  +--------v-----------+
            +--------v---------+       | Admin Approval     |
@@ -40,7 +40,7 @@ The system consists of 3 main components orchestrated via LangGraph:
                                    END
 ```
 
-**RAG Chatbot Agent** - Retrieval-Augmented Generation pipeline using Weaviate as the vector database. Answers questions about parking rates, hours, location, availability, and more.
+**RAG Chatbot Agent** - Retrieval-Augmented Generation pipeline using FAISS as the vector store. Answers questions about parking rates, hours, location, availability, and more.
 
 **Human-in-the-Loop Agent** - Pauses the workflow using LangGraph interrupts to request administrator approval for reservations. Supports approve/reject decisions.
 
@@ -50,7 +50,6 @@ The system consists of 3 main components orchestrated via LangGraph:
 
 - Python 3.11+
 - [uv](https://docs.astral.sh/uv/)
-- Docker and Docker Compose
 - OpenAI API key
 
 ## Setup
@@ -70,19 +69,15 @@ cp .env.example .env
 # Edit .env and set your OPENAI_API_KEY
 ```
 
-### 3. Start Weaviate
-
-```bash
-docker-compose up -d
-```
-
-### 4. Ingest knowledge base
+### 3. Ingest knowledge base
 
 ```bash
 uv run python -m parking_assistant.rag.knowledge
 ```
 
-### 5. Start MCP server
+This builds a FAISS vector index from the parking knowledge data and saves it to `data/faiss_index/`.
+
+### 4. Start MCP server
 
 ```bash
 uv run uvicorn parking_assistant.mcp.server:app --host 0.0.0.0 --port 8000
@@ -171,7 +166,7 @@ Tests cover:
 - **test_guardrails.py** - PII redaction, injection blocking, clean input passthrough
 - **test_reservation.py** - Reservation model defaults, approval decision model
 - **test_mcp.py** - FastAPI endpoints for create, list, approve, reject
-- **test_rag.py** - Retrieval with mocked Weaviate, empty query handling
+- **test_rag.py** - Retrieval with mocked FAISS, empty query handling
 - **test_admin.py** - Full approval/rejection flow with LangGraph interrupt/resume
 
 All tests use mocks — no external services required.
@@ -216,9 +211,9 @@ terraform destroy -var="key_name=your-ssh-key"
 
 The deployment provisions:
 - VPC with public subnet and internet gateway
-- Security group (ports 22, 8000, 8080)
+- Security group (ports 22, 8000)
 - EC2 instance (t3.medium, Ubuntu 22.04)
-- Automatic setup via user_data script (Docker, Python, app install)
+- Automatic setup via user_data script (uv, app install, knowledge ingestion)
 
 ## Project Structure
 
@@ -227,13 +222,12 @@ parking-assistant/
 ├── README.md
 ├── .gitignore
 ├── pyproject.toml
-├── docker-compose.yml
 ├── .env.example
 ├── src/parking_assistant/
 │   ├── config.py                 # Environment configuration
 │   ├── models.py                 # Pydantic data models
 │   ├── rag/
-│   │   ├── vectorstore.py        # Weaviate client management
+│   │   ├── vectorstore.py        # FAISS index management
 │   │   ├── retriever.py          # Semantic search
 │   │   └── knowledge.py          # Knowledge base ingestion
 │   ├── agents/

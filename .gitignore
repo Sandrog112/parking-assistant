@@ -20,4 +20,5 @@ env/
 .terraform.lock.hcl
 terraform.tfvars
 data/reservations.json
+data/faiss_index/
 .ipynb_checkpoints/
