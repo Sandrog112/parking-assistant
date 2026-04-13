@@ -1,160 +1,102 @@
 # Parking Assistant
 
-An intelligent parking chatbot system that provides parking information, handles reservation workflows with human-in-the-loop approval, and persists data via an MCP server.
+An intelligent parking chatbot with a Streamlit UI, powered by RAG (FAISS + LangChain), LangGraph orchestration, human-in-the-loop admin approval, and a FastAPI MCP server for reservation persistence.
+
+---
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
+- [Running the App](#running-the-app)
+- [Testing](#testing)
+- [Evaluation](#evaluation)
+- [Terraform Deployment](#terraform-deployment)
+- [Project Structure](#project-structure)
+
+---
 
 ## Architecture
 
-The system consists of 3 main components orchestrated via LangGraph:
+Three components orchestrated via LangGraph:
 
-```
-                         +------------------+
-                         |   User Message   |
-                         +--------+---------+
-                                  |
-                         +--------v---------+
-                         | Guardrails Input |----> [Blocked] ---> END
-                         +--------+---------+
-                                  |
-                         +--------v---------+
-                         | Intent Classify  |
-                         +--------+---------+
-                                  |
-                    +-------------+-------------+
-                    |                           |
-           +--------v--------+        +--------v-----------+
-           | RAG Chatbot     |        | Create Reservation |
-           | (FAISS + LLM)   |        +--------+-----------+
-           +--------+--------+                 |
-                    |                  +--------v-----------+
-           +--------v---------+       | Admin Approval     |
-           | Guardrails Output |      | (Human-in-the-Loop)|
-           +--------+---------+       +--------+-----------+
-                    |                           |
-                   END              +-----------+-----------+
-                                    |                       |
-                           +--------v------+       +--------v--------+
-                           | MCP Persist   |       | Notify Rejected |
-                           | (FastAPI)     |       +---------+-------+
-                           +--------+------+                 |
-                                    |                       END
-                                   END
-```
+![Architecture](demo/project_map.png)
 
-**RAG Chatbot Agent** - Retrieval-Augmented Generation pipeline using FAISS as the vector store. Answers questions about parking rates, hours, location, availability, and more.
 
-**Human-in-the-Loop Agent** - Pauses the workflow using LangGraph interrupts to request administrator approval for reservations. Supports approve/reject decisions.
+| Component | Role |
+|---|---|
+| **RAG Chatbot** | Retrieves parking knowledge from FAISS, generates answers via LLM |
+| **Human-in-the-Loop** | Pauses workflow via LangGraph `interrupt()` for admin approve/reject |
+| **MCP Server** | FastAPI service that persists reservations to a JSON file |
+| **Guardrails** | Blocks prompt injections on input, redacts PII on output |
 
-**MCP Server** - FastAPI-based server that persists approved reservations to a JSON file. Exposes REST endpoints for reservation CRUD operations.
+---
 
 ## Prerequisites
 
 - Python 3.11+
 - [uv](https://docs.astral.sh/uv/)
-- OpenAI API key
+- EPAM Dial API key (or any Azure OpenAI-compatible endpoint)
 
-## Setup
+---
 
-### 1. Clone and install
+## Quick Start
 
 ```bash
+# 1. Clone
 git clone https://github.com/Sandrog112/parking-assistant.git
 cd parking-assistant
+
+# 2. Install dependencies
 uv sync
-```
 
-### 2. Configure environment
-
-```bash
+# 3. Configure environment
 cp .env.example .env
-# Edit .env and set your OPENAI_API_KEY
 ```
 
-### 3. Ingest knowledge base
+Edit `.env` and set your credentials:
+
+```env
+DIAL_API_KEY=your-dial-api-key
+AZURE_ENDPOINT=https://ai-proxy.lab.epam.com
+API_VERSION=2024-02-01
+AZURE_DEPLOYMENT=gpt-4o-mini
+EMBEDDING_DEPLOYMENT=text-embedding-ada-002
+```
 
 ```bash
+# 4. Build the FAISS vector index
 uv run python -m parking_assistant.rag.knowledge
 ```
 
-This builds a FAISS vector index from the parking knowledge data and saves it to `data/faiss_index/`.
+---
 
-### 4. Start MCP server
+## Running the App
+
+### Streamlit UI
+
+```bash
+uv run streamlit run app.py
+```
+
+Opens at `http://localhost:8501`. From the chat interface you can:
+
+- Ask about parking rates, hours, location, EV charging, capacity, and more
+- Request a reservation by providing your name, surname, car number, and times
+- Approve or reject reservations directly in the UI via the admin panel that appears
+
+### MCP Server
+
+Start in a separate terminal to enable reservation persistence to file:
 
 ```bash
 uv run uvicorn parking_assistant.mcp.server:app --host 0.0.0.0 --port 8000
 ```
 
-## Usage
+The MCP server exposes REST endpoints at `http://localhost:8000/reservations` for creating, listing, approving, and cancelling reservations. See the interactive docs at `http://localhost:8000/docs`.
 
-### Informational Query
-
-```python
-from langchain_core.messages import HumanMessage
-from parking_assistant.graph.workflow import graph
-
-config = {"configurable": {"thread_id": "session-1"}}
-result = graph.invoke(
-    {"messages": [HumanMessage(content="What are the parking rates?")]},
-    config=config,
-)
-print(result["messages"][-1].content)
-```
-
-### Reservation Flow
-
-```python
-from langchain_core.messages import HumanMessage
-from langgraph.types import Command
-from parking_assistant.graph.workflow import graph
-
-config = {"configurable": {"thread_id": "session-2"}}
-
-# Step 1: User requests a reservation
-result = graph.invoke(
-    {"messages": [HumanMessage(
-        content="I'd like to reserve a spot. Name: John Doe, car ABC-1234, tomorrow 9am to 5pm"
-    )]},
-    config=config,
-)
-
-# Graph pauses at admin_approval node
-state = graph.get_state(config)
-print(state.next)  # ('admin_approval',)
-
-# Step 2: Admin approves
-result = graph.invoke(
-    Command(resume={"approved": True, "reason": "Approved"}),
-    config=config,
-)
-print(result["messages"][-1].content)  # Reservation confirmed
-```
-
-### Admin Rejection
-
-```python
-# Resume with rejection instead
-result = graph.invoke(
-    Command(resume={"approved": False, "reason": "No spots available"}),
-    config=config,
-)
-print(result["messages"][-1].content)  # Reservation not approved
-```
-
-### MCP Server API
-
-```bash
-# Create reservation
-curl -X POST http://localhost:8000/reservations \
-  -H "Content-Type: application/json" \
-  -d '{"name":"John","surname":"Doe","car_number":"ABC-1234","start_time":"2026-04-12T09:00","end_time":"2026-04-12T17:00"}'
-
-# List reservations
-curl http://localhost:8000/reservations
-
-# Approve reservation
-curl -X POST http://localhost:8000/reservations/{id}/approve \
-  -H "Content-Type: application/json" \
-  -d '{"reservation_id":"{id}","approved":true,"reason":"Approved"}'
-```
+---
 
 ## Testing
 
@@ -162,28 +104,23 @@ curl -X POST http://localhost:8000/reservations/{id}/approve \
 uv run pytest tests/ -v
 ```
 
-Tests cover:
-- **test_guardrails.py** - PII redaction, injection blocking, clean input passthrough
-- **test_reservation.py** - Reservation model defaults, approval decision model
-- **test_mcp.py** - FastAPI endpoints for create, list, approve, reject
-- **test_rag.py** - Retrieval with mocked FAISS, empty query handling
-- **test_admin.py** - Full approval/rejection flow with LangGraph interrupt/resume
+| Test file | Coverage |
+|---|---|
+| `test_guardrails.py` | PII redaction, injection blocking, clean input passthrough |
+| `test_reservation.py` | Reservation model defaults, approval decision model |
+| `test_mcp.py` | FastAPI endpoints — create, list, approve, reject |
+| `test_rag.py` | FAISS retrieval (mocked), empty query handling |
+| `test_admin.py` | Full approval/rejection flow with LangGraph interrupt/resume |
 
-All tests use mocks — no external services required.
+All tests use mocks — no external services or API keys required.
+
+---
 
 ## Evaluation
 
-The evaluation module provides retrieval quality metrics:
+The `parking_assistant.evaluation.metrics` module provides built-in retrieval quality metrics including Recall@K, Precision@K, and latency measurement. These can be used to benchmark the RAG pipeline against a set of queries with known relevant documents.
 
-```python
-from parking_assistant.evaluation.metrics import recall_at_k, precision_at_k, retrieval_quality
-
-relevant = {"doc1", "doc2", "doc3"}
-retrieved = ["doc1", "doc3", "doc5"]
-
-print(recall_at_k(relevant, retrieved, k=3))     # 0.667
-print(precision_at_k(relevant, retrieved, k=3))   # 0.667
-```
+---
 
 ## Terraform Deployment
 
@@ -191,48 +128,46 @@ Deploy to AWS EC2:
 
 ```bash
 cd terraform
-
-# Initialize
 terraform init
-
-# Preview changes
 terraform plan -var="key_name=your-ssh-key"
-
-# Deploy
 terraform apply -var="key_name=your-ssh-key"
-
-# Get outputs
-terraform output instance_public_ip
-terraform output mcp_url
-
-# Destroy
-terraform destroy -var="key_name=your-ssh-key"
 ```
 
-The deployment provisions:
+Provisions:
 - VPC with public subnet and internet gateway
 - Security group (ports 22, 8000)
 - EC2 instance (t3.medium, Ubuntu 22.04)
-- Automatic setup via user_data script (uv, app install, knowledge ingestion)
+- Auto-setup via user_data script (uv, dependencies, ingestion, server start)
+
+```bash
+# Get connection info
+terraform output instance_public_ip
+terraform output mcp_url
+
+# Tear down
+terraform destroy -var="key_name=your-ssh-key"
+```
+
+---
 
 ## Project Structure
 
 ```
 parking-assistant/
-├── README.md
-├── .gitignore
-├── pyproject.toml
-├── .env.example
+├── app.py                        # Streamlit UI
+├── pyproject.toml                # Dependencies & build config
+├── .env.example                  # Environment template
+│
 ├── src/parking_assistant/
-│   ├── config.py                 # Environment configuration
-│   ├── models.py                 # Pydantic data models
+│   ├── config.py                 # Settings (EPAM Dial credentials, paths)
+│   ├── models.py                 # Pydantic models (Reservation, Approval)
 │   ├── rag/
-│   │   ├── vectorstore.py        # FAISS index management
+│   │   ├── vectorstore.py        # FAISS index load/save
 │   │   ├── retriever.py          # Semantic search
 │   │   └── knowledge.py          # Knowledge base ingestion
 │   ├── agents/
 │   │   ├── chatbot.py            # RAG chatbot + intent classifier
-│   │   └── admin.py              # Human-in-the-loop approval
+│   │   └── admin.py              # Human-in-the-loop approval node
 │   ├── guardrails/
 │   │   └── filters.py            # Input/output safety filters
 │   ├── mcp/
@@ -241,19 +176,10 @@ parking-assistant/
 │   │   ├── state.py              # LangGraph state definition
 │   │   └── workflow.py           # Graph orchestration
 │   └── evaluation/
-│       └── metrics.py            # Retrieval quality metrics
-├── tests/
-│   ├── conftest.py               # Shared test fixtures
-│   ├── test_rag.py
-│   ├── test_reservation.py
-│   ├── test_admin.py
-│   ├── test_mcp.py
-│   └── test_guardrails.py
-├── terraform/
-│   ├── main.tf
-│   ├── variables.tf
-│   ├── outputs.tf
-│   └── user_data.sh
+│       └── metrics.py            # Recall@K, Precision@K, latency
+│
+├── tests/                        # pytest suite (18 tests, all mocked)
+├── terraform/                    # AWS EC2 deployment
 └── data/
-    └── parking_knowledge.json    # Parking knowledge base
+    └── parking_knowledge.json    # Parking knowledge base (12 entries)
 ```

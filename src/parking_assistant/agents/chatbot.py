@@ -1,5 +1,5 @@
 from langchain_core.messages import AIMessage, SystemMessage
-from langchain_openai import ChatOpenAI
+from langchain_openai import AzureChatOpenAI
 from pydantic import BaseModel, Field
 
 from parking_assistant.config import settings
@@ -32,7 +32,13 @@ CLASSIFY_PROMPT = (
 
 
 def _get_llm():
-    return ChatOpenAI(model=settings.llm_model, api_key=settings.openai_api_key)
+    return AzureChatOpenAI(
+        azure_deployment=settings.azure_deployment,
+        openai_api_key=settings.dial_api_key,
+        azure_endpoint=settings.azure_endpoint,
+        openai_api_version=settings.api_version,
+        temperature=0,
+    )
 
 
 def classify_intent(state: dict) -> dict:
