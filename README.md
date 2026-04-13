@@ -6,6 +6,7 @@ An intelligent parking chatbot with a Streamlit UI, powered by RAG (FAISS + Lang
 
 ## Table of Contents
 
+- [Demo](#demo)
 - [Architecture](#architecture)
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
@@ -14,6 +15,30 @@ An intelligent parking chatbot with a Streamlit UI, powered by RAG (FAISS + Lang
 - [Evaluation](#evaluation)
 - [Terraform Deployment](#terraform-deployment)
 - [Project Structure](#project-structure)
+
+---
+
+## Demo
+
+> A real conversation with the Parking Assistant — from general questions to a completed reservation.
+
+**Asking about rates and hours:**
+
+![Parking rates](demo/chat_1.jpeg)
+
+![Hours of operation](demo/chat_2.jpeg)
+
+**Asking about location:**
+
+![Garage location](demo/chat_3.jpeg)
+
+**Making a reservation — admin approval panel appears:**
+
+![Reservation with admin approval](demo/chat_4.jpeg)
+
+**Reservation approved and confirmed:**
+
+![Reservation confirmed](demo/chat_5.jpeg)
 
 ---
 
